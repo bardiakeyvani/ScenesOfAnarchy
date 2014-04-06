@@ -1,3 +1,4 @@
+#pragma once
 #include "GameApplicationPCH.h"
 #include "GravityRoomController.h"
 
@@ -5,8 +6,15 @@ GravityRoomController::GravityRoomController(void)
 {
 	VisBaseEntity_cl *pCamera  = Vision::Game.SearchEntity("CameraPosition");
 	Vision::Camera.AttachToEntity(pCamera, hkvVec3::ZeroVector());
-#if defined(_VISION_ANDROID)
+	//vHavokPhysicsModule *pMod = static_cast<vHavokPhysicsModule*>(vHavokPhysicsModule::GetInstance());
 	pMod = static_cast<vHavokPhysicsModule*>(vHavokPhysicsModule::GetInstance());
+
+	myWorld = pMod->GetPhysicsWorld();
+	collListener = new myCollisionListener;
+	myWorld->markForWrite();
+	myWorld->addContactListener(collListener);
+	myWorld->unmarkForWrite();
+	#if defined(_VISION_ANDROID)
 	pMotionInput = (VMotionInputAndroid*)(&VInputManager::GetInputDevice(INPUT_DEVICE_MOTION_SENSOR));
 	pMotionInput->SetEnabled(true);
 #endif
@@ -15,6 +23,10 @@ GravityRoomController::GravityRoomController(void)
 
 GravityRoomController::~GravityRoomController(void)
 {
+#if defined(_VISION_ANDROID)
+	myWorld->removeContactListener(collListener);
+	delete collListener;
+#endif
 }
 
 bool GravityRoomController::Run(VInputMap* inputMap){
